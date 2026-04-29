@@ -16,6 +16,11 @@ interface Heading {
   text: string;
 }
 
+interface NavLink {
+  title: string;
+  href: string;
+}
+
 interface Props {
   title: string;
   description?: string;
@@ -29,9 +34,11 @@ interface Props {
   rating?: number;
   link?: string;
   headings?: Heading[];
+  prevPost?: NavLink;
+  nextPost?: NavLink;
 }
 
-const { title, description, pubDate, updatedDate, tags, category, type, backHref, backLabel, rating, link, headings = [] } = Astro.props;
+const { title, description, pubDate, updatedDate, tags, category, type, backHref, backLabel, rating, link, headings = [], prevPost, nextPost } = Astro.props;
 
 // 只取 h2 和 h3 作为目录
 const tocItems = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
@@ -67,6 +74,10 @@ const ogArticleMeta = [
       <meta property={property} content={content} />
     ))}
   </Fragment>
+
+  <!-- 阅读进度条 -->
+  <div id="reading-progress" class="fixed top-0 left-0 h-0.5 bg-primary-600 z-50 transition-none" style="width: 0%"></div>
+
   <div class="py-8 sm:py-12">
     <div class="max-w-(--width-content) mx-auto">
       <!-- 返回链接 -->
@@ -211,6 +222,24 @@ const ogArticleMeta = [
         )}
       </div>
 
+      <!-- 上一篇 / 下一篇 -->
+      {(prevPost || nextPost) && (
+        <div class="mt-10 pt-6 border-t border-gray-200 dark:border-dark-border grid gap-4 sm:grid-cols-2">
+          {prevPost ? (
+            <a href={prevPost.href} class="group flex flex-col p-4 rounded-lg border border-gray-100 dark:border-dark-border hover:border-primary-300 dark:hover:border-primary-700 transition-colors">
+              <span class="text-xs text-gray-400 dark:text-gray-500 mb-1">← 上一篇</span>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors line-clamp-2">{prevPost.title}</span>
+            </a>
+          ) : <div />}
+          {nextPost ? (
+            <a href={nextPost.href} class="group flex flex-col p-4 rounded-lg border border-gray-100 dark:border-dark-border hover:border-primary-300 dark:hover:border-primary-700 transition-colors text-right">
+              <span class="text-xs text-gray-400 dark:text-gray-500 mb-1">下一篇 →</span>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors line-clamp-2">{nextPost.title}</span>
+            </a>
+          ) : <div />}
+        </div>
+      )}
+
       <!-- 评论区域 -->
       <div class="mt-12 pt-8 border-t border-gray-200 dark:border-dark-border">
         <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">评论</h2>
@@ -229,3 +258,66 @@ const ogArticleMeta = [
     </div>
   </div>
 </BaseLayout>
+
+<script>
+  const bar = document.getElementById('reading-progress');
+  if (bar) {
+    window.addEventListener('scroll', () => {
+      const scrolled = window.scrollY;
+      const total = document.documentElement.scrollHeight - window.innerHeight;
+      bar.style.width = total > 0 ? `${(scrolled / total) * 100}%` : '0%';
+    });
+  }
+</script>
+
+<script>
+  // 代码块复制按钮
+  document.querySelectorAll('pre').forEach((pre) => {
+    pre.style.position = 'relative';
+
+    const btn = document.createElement('button');
+    btn.textContent = '复制';
+    btn.style.cssText = 'position:absolute;top:0.5rem;right:0.5rem;padding:0.25rem 0.5rem;font-size:0.75rem;border-radius:0.25rem;border:1px solid rgba(156,163,175,0.3);background:rgba(255,255,255,0.8);color:#6b7280;cursor:pointer;transition:all 0.2s;backdrop-filter:blur(4px);';
+
+    // 暗色模式适配
+    const updateDark = () => {
+      const isDark = document.documentElement.classList.contains('dark');
+      if (isDark) {
+        btn.style.background = 'rgba(37,37,62,0.9)';
+        btn.style.color = '#9ca3af';
+        btn.style.borderColor = 'rgba(58,58,94,0.6)';
+      } else {
+        btn.style.background = 'rgba(255,255,255,0.8)';
+        btn.style.color = '#6b7280';
+        btn.style.borderColor = 'rgba(156,163,175,0.3)';
+      }
+    };
+    updateDark();
+    new MutationObserver(updateDark).observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
+    btn.addEventListener('click', async () => {
+      const code = pre.querySelector('code');
+      const text = code ? code.textContent : pre.textContent;
+      try {
+        await navigator.clipboard.writeText(text || '');
+        btn.textContent = '已复制';
+        btn.style.color = '#059669';
+        setTimeout(() => {
+          btn.textContent = '复制';
+          updateDark();
+        }, 2000);
+      } catch {
+        btn.textContent = '失败';
+        setTimeout(() => {
+          btn.textContent = '复制';
+          updateDark();
+        }, 2000);
+      }
+    });
+
+    pre.appendChild(btn);
+  });
+</script>

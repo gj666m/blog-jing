@@ -3,14 +3,19 @@ import { getCollection, render } from 'astro:content';
 import PostLayout from '../../layouts/PostLayout.astro';
 
 export async function getStaticPaths() {
-  const posts = await getCollection('blog', ({ data }) => !data.draft);
-  return posts.map((post) => ({
+  const posts = (await getCollection('blog', ({ data }) => !data.draft))
+    .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+  return posts.map((post, i) => ({
     params: { slug: post.id },
-    props: { post },
+    props: {
+      post,
+      prev: i > 0 ? { title: posts[i - 1].data.title, href: `/blog/${posts[i - 1].id}` } : undefined,
+      next: i < posts.length - 1 ? { title: posts[i + 1].data.title, href: `/blog/${posts[i + 1].id}` } : undefined,
+    },
   }));
 }
 
-const { post } = Astro.props;
+const { post, prev, next } = Astro.props;
 const { Content, headings } = await render(post);
 ---
 
@@ -24,6 +29,8 @@ const { Content, headings } = await render(post);
   backHref="/blog"
   backLabel="返回博文列表"
   headings={headings}
+  prevPost={prev}
+  nextPost={next}
 >
   <Content />
 </PostLayout>
