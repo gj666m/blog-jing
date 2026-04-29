@@ -18,14 +18,14 @@ const categories = [...new Set(allPosts.map((p) => p.data.category))];
     <div class="flex flex-wrap gap-2 mb-8">
       <a
         href="/blog"
-        class="text-sm px-3 py-1 rounded-full border border-gray-200 dark:border-dark-border hover:border-primary-600 dark:hover:border-primary-400 transition-colors text-gray-700 dark:text-gray-300"
+        class="filter-btn text-sm px-4 py-1.5 rounded-full bg-gray-100 dark:bg-dark-surface text-gray-600 dark:text-gray-400 border border-transparent hover:border-primary-300 dark:hover:border-primary-700 hover:text-primary-600 dark:hover:text-primary-400 transition-colors font-medium"
       >
         全部
       </a>
       {categories.map((cat) => (
         <a
           href={`/blog?category=${cat}`}
-          class="text-sm px-3 py-1 rounded-full border border-gray-200 dark:border-dark-border hover:border-primary-600 dark:hover:border-primary-400 transition-colors text-gray-700 dark:text-gray-300"
+          class="filter-btn text-sm px-4 py-1.5 rounded-full bg-gray-100 dark:bg-dark-surface text-gray-600 dark:text-gray-400 border border-transparent hover:border-primary-300 dark:hover:border-primary-700 hover:text-primary-600 dark:hover:text-primary-400 transition-colors font-medium"
           data-category={cat}
         >
           {cat}
@@ -65,15 +65,10 @@ const categories = [...new Set(allPosts.map((p) => p.data.category))];
     // 高亮当前分类
     document.querySelectorAll('[data-category]').forEach((el) => {
       if (el.getAttribute('data-category') === category) {
-        el.classList.add('bg-primary-600', 'text-white', 'border-primary-600', 'dark:bg-primary-600', 'dark:text-white', 'dark:border-primary-600');
-        el.classList.remove('text-gray-700', 'dark:text-gray-300');
+        el.classList.add('bg-primary-600', 'text-white', 'border-primary-600');
+        el.classList.remove('bg-gray-100', 'dark:bg-dark-surface', 'text-gray-600', 'dark:text-gray-400');
       }
     });
-    // 高亮"全部"
-    const allBtn = document.querySelector('a[href="/blog"]');
-    if (allBtn) {
-      allBtn.classList.add('text-gray-700', 'dark:text-gray-300');
-    }
 
     // 过滤文章
     document.querySelectorAll('[data-post-category]').forEach((el) => {

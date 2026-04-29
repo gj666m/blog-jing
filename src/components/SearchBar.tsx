@@ -17,12 +17,15 @@ export default function SearchBar() {
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // 动态加载 pagefind
+  // 动态加载 pagefind（仅 build 后可用，dev 模式跳过）
   useEffect(() => {
     const loadPagefind = async () => {
-      if (typeof window !== 'undefined') {
+      try {
+        // new Function 绕过 Vite 静态分析，dev 模式下 pagefind 不存在会走 catch
         // @ts-expect-error pagefind 运行时加载
-        window.pagefind = await import('/pagefind/pagefind.js');
+        window.pagefind = await new Function('return import("/pagefind/pagefind.js")')();
+      } catch {
+        // dev 模式下 pagefind 索引不存在，静默跳过
       }
     };
     loadPagefind();

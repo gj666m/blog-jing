@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* 使用 .dark 类而非 prefers-color-scheme 媒体查询 */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* Primary: ink green 墨绿色 */
   --color-primary-50: oklch(0.97 0.02 160);
