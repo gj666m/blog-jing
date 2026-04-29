@@ -340,3 +340,42 @@ P7 已完成，继续 P8：VPS 部署 + HTTPS + 域名。
 - `sudo ln -sf` 创建软链接需确认 sites-enabled 目录实际生效，`ls -la` 检查
 - rsync 用非 root 用户时，先传到 /tmp 再 `sudo cp` 到目标目录，避免权限问题
 - 国内域名备案需 1-2 周，备案通过后才能配 SSL + 域名访问
+
+---
+
+## Session 8 — 2026-04-29
+
+### 背景
+站点已部署到 VPS 通过 8080 端口访问，用户反馈两个问题：1）暗色模式切换不生效；2）PostCard 卡片样式简陋，标签不美观。
+
+### 推理过程
+
+1. **暗色模式根因**：Tailwind CSS 4.x 默认用 `prefers-color-scheme: dark` 媒体查询触发暗色模式，而不是 `.dark` 类。ThemeToggle 切换的是 `.dark` 类，Tailwind 完全忽略。需在 CSS 中添加 `@custom-variant dark (&:where(.dark, .dark *))` 覆盖默认行为。
+2. **PostCard 视觉**：原卡片只有边框无背景，看起来像"空白方框"。标签用浅绿色圆角矩形（`bg-primary-50`），视觉上过于简单。改为：卡片加 `bg-white dark:bg-dark-surface` + `shadow-sm`；标签改为 `#标签` 格式，灰色底 + 细边框；分隔符从 `/` 改为 `·`；评分用琥珀色。
+3. **分类筛选按钮**：原按钮只有边框无填充，改为 `bg-gray-100` 背景 + `font-medium` + 选中态绿色背景。
+4. **Pagefind dev 报错**：`import('/pagefind/pagefind.js')` 在 dev 模式下文件不存在，Vite 在编译阶段就报错。`try/catch` 和 `@vite-ignore` 均无效。最终用 `new Function('return import(...)')()` 彻底绕过 Vite 静态分析。
+
+### 关键决策
+
+| 决策 | 理由 |
+|------|------|
+| @custom-variant dark | Tailwind 4 默认用媒体查询，需显式声明使用 .dark 类 |
+| new Function 绕过 import | Vite 会静态分析所有 import()，try/catch 无法拦截编译阶段错误 |
+| 标签用灰色而非绿色 | 减少视觉噪音，绿色只保留在分类/标题 hover 等关键位置 |
+| optimizeDeps.exclude | 防止 Vite dev server 尝试预构建 pagefind |
+
+### 修改的文件
+
+| 文件 | 操作 |
+|------|------|
+| `src/styles/global.css` | 修改（添加 @custom-variant dark） |
+| `src/components/PostCard.astro` | 修改（卡片背景+阴影，标签 # 格式，评分琥珀色，分隔符 ·） |
+| `src/pages/blog/index.astro` | 修改（筛选按钮样式 + 选中态逻辑） |
+| `src/components/SearchBar.tsx` | 修改（new Function 绕过 Vite 静态分析） |
+| `astro.config.mjs` | 修改（添加 optimizeDeps.exclude） |
+
+### 经验总结
+
+- Tailwind CSS 4.x 暗色模式默认不是 class-based，必须显式配置 `@custom-variant dark`
+- Vite 会在编译阶段分析所有 `import()` 表达式，`try/catch` 只能捕获运行时错误，`@vite-ignore` 对某些场景无效，`new Function` 是最可靠的绕过方式
+- `optimizeDeps.exclude` 和 `rollupOptions.external` 分别作用于 dev 和 build，两者都需要配置

@@ -10,6 +10,12 @@ const giscusConfig = {
   categoryId: 'DIC_kwDOSPkTs84C78R4',
 };
 
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
 interface Props {
   title: string;
   description?: string;
@@ -22,9 +28,13 @@ interface Props {
   backLabel: string;
   rating?: number;
   link?: string;
+  headings?: Heading[];
 }
 
-const { title, description, pubDate, updatedDate, tags, category, type, backHref, backLabel, rating, link } = Astro.props;
+const { title, description, pubDate, updatedDate, tags, category, type, backHref, backLabel, rating, link, headings = [] } = Astro.props;
+
+// 只取 h2 和 h3 作为目录
+const tocItems = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
 
 // 阅读时间估算
 const content = await Astro.slots.render('default');
@@ -41,9 +51,22 @@ const formattedUpdated = updatedDate?.toLocaleDateString('zh-CN', {
   month: 'long',
   day: 'numeric',
 });
+
+// 文章专用 OG 标签
+const ogArticleMeta = [
+  { property: 'article:published_time', content: pubDate.toISOString() },
+  ...(updatedDate ? [{ property: 'article:modified_time', content: updatedDate.toISOString() }] : []),
+  ...(category ? [{ property: 'article:section', content: category }] : []),
+  ...(tags?.map((tag) => ({ property: 'article:tag', content: tag })) || []),
+];
 ---
 
-<BaseLayout title={title} description={description}>
+<BaseLayout title={title} description={description} ogType="article">
+  <Fragment slot="head">
+    {ogArticleMeta.map(({ property, content }) => (
+      <meta property={property} content={content} />
+    ))}
+  </Fragment>
   <div class="py-8 sm:py-12">
     <div class="max-w-(--width-content) mx-auto">
       <!-- 返回链接 -->
@@ -114,25 +137,79 @@ const formattedUpdated = updatedDate?.toLocaleDateString('zh-CN', {
         </div>
       )}
 
+      <!-- 移动端 TOC 折叠 -->
+      {tocItems.length > 0 && (
+        <details class="lg:hidden mb-6 bg-gray-50 dark:bg-dark-surface rounded-lg border border-gray-100 dark:border-dark-border">
+          <summary class="px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+            目录（{tocItems.length} 节）
+          </summary>
+          <nav class="px-4 pb-3">
+            <ul class="space-y-1">
+              {tocItems.map((h) => (
+                <li>
+                  <a
+                    href={`#${h.slug}`}
+                    class:list={[
+                      'block text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors',
+                      h.depth === 3 && 'pl-4',
+                    ]}
+                  >
+                    {h.text}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </details>
+      )}
+
       <!-- 分隔线 -->
       <hr class="border-gray-200 dark:border-dark-border mb-8" />
 
-      <!-- 文章内容（data-pagefind-body 标记供搜索索引） -->
-      <article
-        data-pagefind-body
-        data-pagefind-meta={`title:${title}`}
-        data-pagefind-meta={`description:${description || ''}`}
-        data-pagefind-tags={tags?.join(', ') || ''}
-        class="prose prose-gray dark:prose-invert max-w-none
-        prose-headings:text-gray-900 dark:prose-headings:text-gray-100
-        prose-a:text-primary-600 dark:prose-a:text-primary-400
-        prose-code:text-primary-700 dark:prose-code:text-primary-300
-        prose-pre:bg-gray-100 dark:prose-pre:bg-dark-surface
-        prose-blockquote:border-l-primary-600 dark:prose-blockquote:border-l-primary-400
-        prose-a:underline prose-a:decoration-primary-600/30 hover:prose-a:decoration-primary-600 prose-a:underline-offset-2
-      ">
-        <slot />
-      </article>
+      <!-- 内容区域：文章 + 桌面端 TOC 侧边栏 -->
+      <div class="lg:flex lg:gap-8">
+        <!-- 文章内容（data-pagefind-body 标记供搜索索引） -->
+        <article
+          data-pagefind-body
+          data-pagefind-meta={`title:${title}`}
+          data-pagefind-meta={`description:${description || ''}`}
+          data-pagefind-tags={tags?.join(', ') || ''}
+          class="prose prose-gray dark:prose-invert max-w-none min-w-0
+          prose-headings:text-gray-900 dark:prose-headings:text-gray-100
+          prose-a:text-primary-600 dark:prose-a:text-primary-400
+          prose-code:text-primary-700 dark:prose-code:text-primary-300
+          prose-pre:bg-gray-100 dark:prose-pre:bg-dark-surface
+          prose-blockquote:border-l-primary-600 dark:prose-blockquote:border-l-primary-400
+          prose-a:underline prose-a:decoration-primary-600/30 hover:prose-a:decoration-primary-600 prose-a:underline-offset-2
+        ">
+          <slot />
+        </article>
+
+        <!-- 桌面端 TOC 侧边栏 -->
+        {tocItems.length > 0 && (
+          <aside class="hidden lg:block lg:w-56 xl:w-64 shrink-0">
+            <nav class="sticky top-24">
+              <h2 class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">目录</h2>
+              <ul class="space-y-1.5 border-l-2 border-gray-100 dark:border-dark-border">
+                {tocItems.map((h) => (
+                  <li>
+                    <a
+                      href={`#${h.slug}`}
+                      class:list={[
+                        'block text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors border-l-2 -ml-0.5 pl-3',
+                        h.depth === 3 && 'pl-7',
+                        h.depth === 2 && 'hover:border-primary-600 dark:hover:border-primary-400',
+                      ]}
+                    >
+                      {h.text}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </aside>
+        )}
+      </div>
 
       <!-- 评论区域 -->
       <div class="mt-12 pt-8 border-t border-gray-200 dark:border-dark-border">

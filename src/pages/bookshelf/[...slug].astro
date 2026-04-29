@@ -11,7 +11,7 @@ export async function getStaticPaths() {
 }
 
 const { item } = Astro.props;
-const { Content } = await render(item);
+const { Content, headings } = await render(item);
 ---
 
 <PostLayout
@@ -24,6 +24,7 @@ const { Content } = await render(item);
   link={item.data.link}
   backHref="/bookshelf"
   backLabel="返回书架列表"
+  headings={headings}
 >
   <Content />
 </PostLayout>
