@@ -379,3 +379,48 @@ P7 已完成，继续 P8：VPS 部署 + HTTPS + 域名。
 - Tailwind CSS 4.x 暗色模式默认不是 class-based，必须显式配置 `@custom-variant dark`
 - Vite 会在编译阶段分析所有 `import()` 表达式，`try/catch` 只能捕获运行时错误，`@vite-ignore` 对某些场景无效，`new Function` 是最可靠的绕过方式
 - `optimizeDeps.exclude` 和 `rollupOptions.external` 分别作用于 dev 和 build，两者都需要配置
+
+---
+
+## Session 9 — 2026-04-29
+
+### 背景
+P8 等待备案中，继续优化站点体验。用户选择做 SEO 基础 + 文章 TOC + 上一篇/下一篇 + 阅读进度条 + 代码块复制按钮。
+
+### 推理过程
+
+1. **Sitemap 集成**：`@astrojs/sitemap` 一行配置即可，Astro 自动根据 `site` 字段生成 `sitemap-index.xml`。配合 `robots.txt` 指向 sitemap。
+2. **OG 标签**：BaseLayout 加通用标签（og:title, og:description, og:type），PostLayout 通过 `<slot name="head">` 注入文章专用标签（article:published_time, article:tag）。需要在 BaseLayout 的 `<head>` 中添加 `<slot name="head" />`。
+3. **TOC 实现**：Astro 5 的 `render()` 返回 `{ Content, headings }`，headings 包含 `{ depth, slug, text }`。过滤 h2/h3 作为目录项。桌面端用 sticky 侧边栏，移动端用 `<details>` 折叠面板。需要将内容区从 `max-w-content` 改为 `lg:flex lg:gap-8` 布局以容纳侧边栏。
+4. **上一篇/下一篇**：在 `getStaticPaths` 中排序后计算 prev/next，传入 PostLayout 渲染为两列网格卡片。
+5. **阅读进度条**：`fixed top-0` 的细线，用 `scrollY / (scrollHeight - innerHeight)` 计算百分比。只在 PostLayout 中添加。
+6. **代码块复制**：遍历 `document.querySelectorAll('pre')` 动态插入按钮。`navigator.clipboard` 只在 HTTPS/localhost 可用，HTTP 环境需降级为 `document.execCommand('copy')` + 临时 textarea。
+
+### 关键决策
+
+| 决策 | 理由 |
+|------|------|
+| `<slot name="head" />` 注入 OG 标签 | PostLayout 无法直接修改 BaseLayout 的 head，用命名 slot 穿透 |
+| TOC 桌面端 sticky + 移动端 details | 不同设备最优展示方式不同，lg 断点切换 |
+| 复制按钮用 execCommand 降级 | HTTP 环境下 navigator.clipboard 不可用 |
+| 进度条只在 PostLayout | 列表页和首页不需要进度条 |
+
+### 修改的文件
+
+| 文件 | 操作 |
+|------|------|
+| `astro.config.mjs` | 修改（添加 sitemap 集成） |
+| `public/robots.txt` | 新建 |
+| `src/layouts/BaseLayout.astro` | 修改（canonical URL + OG/Twitter 标签 + head slot） |
+| `src/layouts/PostLayout.astro` | 修改（文章 OG 标签 + TOC + 进度条 + 上下篇 + 复制按钮） |
+| `src/pages/blog/[...slug].astro` | 修改（headings + prev/next） |
+| `src/pages/life/[...slug].astro` | 修改（headings + prev/next） |
+| `src/pages/bookshelf/[...slug].astro` | 修改（headings + prev/next） |
+| `knowledge/` | 新建（7 个知识沉淀文件） |
+
+### 经验总结
+
+- Astro 5 的 `render(entry)` 返回 `headings` 数组，无需额外 remark 插件即可获取标题结构
+- `navigator.clipboard` API 要求 Secure Context（HTTPS 或 localhost），非 HTTPS 站点必须准备降级方案
+- BaseLayout 的 `<slot name="head" />` 模式可以让子布局灵活注入 head 内容，不需要改 BaseLayout 的 Props
+- GitHub 在国内网络不稳定，推送失败时先部署再补推
