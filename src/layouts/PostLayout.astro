@@ -301,21 +301,33 @@ const ogArticleMeta = [
     btn.addEventListener('click', async () => {
       const code = pre.querySelector('code');
       const text = code ? code.textContent : pre.textContent;
+
+      // 复制函数：优先 Clipboard API，降级 execCommand
+      const copyText = async (str: string) => {
+        if (navigator.clipboard) {
+          await navigator.clipboard.writeText(str);
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = str;
+          ta.style.cssText = 'position:fixed;left:-9999px';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+        }
+      };
+
       try {
-        await navigator.clipboard.writeText(text || '');
+        await copyText(text || '');
         btn.textContent = '已复制';
         btn.style.color = '#059669';
-        setTimeout(() => {
-          btn.textContent = '复制';
-          updateDark();
-        }, 2000);
       } catch {
         btn.textContent = '失败';
-        setTimeout(() => {
-          btn.textContent = '复制';
-          updateDark();
-        }, 2000);
       }
+      setTimeout(() => {
+        btn.textContent = '复制';
+        updateDark();
+      }, 2000);
     });
 
     pre.appendChild(btn);
