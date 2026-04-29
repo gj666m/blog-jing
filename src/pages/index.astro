@@ -1,0 +1,30 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="首页" description="个人网站 - 记录学习、工作与生活">
+  <div class="py-16 sm:py-24">
+    <div class="max-w-(--width-content) mx-auto text-center">
+      <h1 class="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-gray-100 mb-6">
+        你好，我是 <span class="text-primary-600 dark:text-primary-400">Jing</span>
+      </h1>
+      <p class="text-lg text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
+        记录学习历程、工作经历与生活点滴
+      </p>
+      <div class="flex items-center justify-center gap-4">
+        <a
+          href="/blog"
+          class="inline-flex items-center px-6 py-3 rounded-lg bg-primary-600 text-white font-medium hover:bg-primary-700 transition-colors"
+        >
+          阅读博文
+        </a>
+        <a
+          href="/about"
+          class="inline-flex items-center px-6 py-3 rounded-lg border border-gray-300 dark:border-dark-border text-gray-700 dark:text-gray-300 font-medium hover:border-primary-600 dark:hover:border-primary-400 transition-colors"
+        >
+          了解更多
+        </a>
+      </div>
+    </div>
+  </div>
+</BaseLayout>

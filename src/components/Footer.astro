@@ -1,0 +1,19 @@
+---
+const currentYear = new Date().getFullYear();
+---
+
+<footer class="border-t border-gray-200 dark:border-dark-border mt-auto">
+  <div class="w-full max-w-(--width-page) mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500 dark:text-gray-400">
+      <p>&copy; {currentYear} Jing. All rights reserved.</p>
+      <div class="flex items-center gap-4">
+        <a href="/about" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+          关于
+        </a>
+        <a href="https://github.com/" target="_blank" rel="noopener noreferrer" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+          GitHub
+        </a>
+      </div>
+    </div>
+  </div>
+</footer>
