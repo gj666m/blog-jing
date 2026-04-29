@@ -1,0 +1,76 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+// 从所有集合收集标签
+const [blogPosts, lifePosts, bookshelfItems] = await Promise.all([
+  getCollection('blog', ({ data }) => !data.draft),
+  getCollection('life'),
+  getCollection('bookshelf'),
+]);
+
+const tagMap = new Map<string, { count: number; collections: Set<string> }>();
+
+const allEntries = [
+  ...blogPosts.map((p) => ({ tags: p.data.tags, collection: 'blog' })),
+  ...lifePosts.map((p) => ({ tags: p.data.tags, collection: 'life' })),
+  ...bookshelfItems.map((p) => ({ tags: p.data.tags, collection: 'bookshelf' })),
+];
+
+for (const entry of allEntries) {
+  for (const tag of entry.tags) {
+    const existing = tagMap.get(tag);
+    if (existing) {
+      existing.count++;
+      existing.collections.add(entry.collection);
+    } else {
+      tagMap.set(tag, { count: 1, collections: new Set([entry.collection]) });
+    }
+  }
+}
+
+// 按数量降序排列
+const sortedTags = [...tagMap.entries()].sort((a, b) => b[1].count - a[1].count);
+
+const collectionLabels: Record<string, string> = {
+  blog: '博文',
+  life: '生活',
+  bookshelf: '书架',
+};
+---
+
+<BaseLayout title="标签" description="按标签浏览所有内容">
+  <div class="py-8 sm:py-12">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-8">标签</h1>
+
+    <div class="flex flex-wrap gap-3">
+      {sortedTags.map(([tag, info]) => {
+        const sizeClass = info.count >= 5 ? 'text-lg px-5 py-2.5'
+          : info.count >= 3 ? 'text-base px-4 py-2'
+          : 'text-sm px-3 py-1.5';
+        return (
+        <a
+          href={`/tags/${tag}`}
+          class={`inline-flex items-center gap-2 ${sizeClass} rounded-[8px] border border-gray-200 dark:border-dark-border hover:border-primary-600 dark:hover:border-primary-400 hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200 group`}
+        >
+          <span class="text-gray-900 dark:text-gray-100 group-hover:text-primary-600 dark:group-hover:text-primary-400 font-medium">
+            {tag}
+          </span>
+          <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-dark-bg px-1.5 py-0.5 rounded-full">
+            {info.count}
+          </span>
+          <span class="text-xs text-gray-400 dark:text-gray-500">
+            {[...info.collections].map((c) => collectionLabels[c]).join('/')}
+          </span>
+        </a>
+      )})}
+    </div>
+
+    {sortedTags.length === 0 && (
+      <div class="text-center py-16">
+        <svg class="mx-auto h-12 w-12 text-gray-300 dark:text-dark-border mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 6h.008v.008H6V6z" /></svg>
+        <p class="text-gray-500 dark:text-gray-400">暂无标签</p>
+      </div>
+    )}
+  </div>
+</BaseLayout>

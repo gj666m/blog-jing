@@ -1,0 +1,29 @@
+---
+import { getCollection, render } from 'astro:content';
+import PostLayout from '../../layouts/PostLayout.astro';
+
+export async function getStaticPaths() {
+  const items = await getCollection('bookshelf');
+  return items.map((item) => ({
+    params: { slug: item.id },
+    props: { item },
+  }));
+}
+
+const { item } = Astro.props;
+const { Content } = await render(item);
+---
+
+<PostLayout
+  title={item.data.title}
+  description={item.data.description}
+  pubDate={item.data.pubDate}
+  tags={item.data.tags}
+  type={item.data.type}
+  rating={item.data.rating}
+  link={item.data.link}
+  backHref="/bookshelf"
+  backLabel="返回书架列表"
+>
+  <Content />
+</PostLayout>

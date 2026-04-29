@@ -1,0 +1,111 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostCard from '../../components/PostCard.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const [blogPosts, lifePosts, bookshelfItems] = await Promise.all([
+    getCollection('blog', ({ data }) => !data.draft),
+    getCollection('life'),
+    getCollection('bookshelf'),
+  ]);
+
+  const tagMap = new Map<string, Array<{
+    title: string;
+    description: string;
+    pubDate: Date;
+    href: string;
+    tags: string[];
+    category?: string;
+    type?: string;
+    rating?: number;
+    link?: string;
+    collection: string;
+  }>>();
+
+  const addEntries = (
+    posts: typeof blogPosts | typeof lifePosts | typeof bookshelfItems,
+    collection: string,
+    getExtra: (data: any) => Record<string, any>
+  ) => {
+    for (const post of posts) {
+      for (const tag of post.data.tags) {
+        if (!tagMap.has(tag)) tagMap.set(tag, []);
+        tagMap.get(tag)!.push({
+          title: post.data.title,
+          description: post.data.description,
+          pubDate: post.data.pubDate,
+          href: `/${collection}/${post.id}`,
+          tags: post.data.tags,
+          collection,
+          ...getExtra(post.data),
+        });
+      }
+    }
+  };
+
+  addEntries(blogPosts, 'blog', (d) => ({ category: d.category }));
+  addEntries(lifePosts, 'life', (d) => ({ type: d.type }));
+  addEntries(bookshelfItems, 'bookshelf', (d) => ({ rating: d.rating, link: d.link, type: d.type }));
+
+  return [...tagMap.entries()].map(([tag, entries]) => ({
+    params: { tag },
+    props: {
+      entries: entries.sort((a, b) => b.pubDate.valueOf() - a.pubDate.valueOf()),
+    },
+  }));
+}
+
+const { tag } = Astro.params;
+const { entries } = Astro.props;
+
+const collectionLabels: Record<string, string> = {
+  blog: '博文',
+  life: '生活',
+  bookshelf: '书架',
+};
+---
+
+<BaseLayout title={`标签：${tag}`} description={`包含标签「${tag}」的所有文章`}>
+  <div class="py-8 sm:py-12">
+    <div class="flex items-center gap-4 mb-8">
+      <a
+        href="/tags"
+        class="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        全部标签
+      </a>
+    </div>
+
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+      <span class="text-primary-600 dark:text-primary-400">#</span> {tag}
+    </h1>
+    <p class="text-gray-500 dark:text-gray-400 mb-8">共 {entries.length} 篇</p>
+
+    <div class="grid gap-6 sm:grid-cols-2">
+      {entries.map((entry) => (
+        <div class="flex items-start gap-2">
+          <span class="shrink-0 text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-dark-surface text-gray-500 dark:text-gray-400 mt-1">
+            {collectionLabels[entry.collection]}
+          </span>
+          <div class="flex-1">
+            <PostCard
+              title={entry.title}
+              description={entry.description}
+              pubDate={entry.pubDate}
+              href={entry.href}
+              tags={entry.tags}
+              category={entry.category}
+              type={entry.type}
+              rating={entry.rating}
+              link={entry.link}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</BaseLayout>

@@ -1,0 +1,154 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Comment from '../components/Comment.tsx';
+
+// Giscus 配置 - 在 https://giscus.app 获取你的配置值
+const giscusConfig = {
+  repo: 'gj666m/blog-jing',
+  repoId: 'R_kgDOSPkTsw',
+  category: 'Announcements',
+  categoryId: 'DIC_kwDOSPkTs84C78R4',
+};
+
+interface Props {
+  title: string;
+  description?: string;
+  pubDate: Date;
+  updatedDate?: Date;
+  tags?: string[];
+  category?: string;
+  type?: string;
+  backHref: string;
+  backLabel: string;
+  rating?: number;
+  link?: string;
+}
+
+const { title, description, pubDate, updatedDate, tags, category, type, backHref, backLabel, rating, link } = Astro.props;
+
+// 阅读时间估算
+const content = await Astro.slots.render('default');
+const readingTime = Math.max(1, Math.ceil(content.replace(/<[^>]*>/g, '').length / 400));
+
+const formattedDate = pubDate.toLocaleDateString('zh-CN', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+
+const formattedUpdated = updatedDate?.toLocaleDateString('zh-CN', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+---
+
+<BaseLayout title={title} description={description}>
+  <div class="py-8 sm:py-12">
+    <div class="max-w-(--width-content) mx-auto">
+      <!-- 返回链接 -->
+      <a
+        href={backHref}
+        class="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors mb-6"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        {backLabel}
+      </a>
+
+      <!-- 文章标题 -->
+      <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+        {title}
+      </h1>
+
+      <!-- 元信息 -->
+      <div class="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400 mb-2">
+        <time datetime={pubDate.toISOString()}>{formattedDate}</time>
+        <span class="text-gray-300 dark:text-dark-border">/</span>
+        <span>预计阅读 {readingTime} 分钟</span>
+        {formattedUpdated && (
+          <span>（更新于 {formattedUpdated}）</span>
+        )}
+        {category && (
+          <>
+            <span class="text-gray-300 dark:text-dark-border">/</span>
+            <span class="text-primary-600 dark:text-primary-400">{category}</span>
+          </>
+        )}
+        {type && (
+          <>
+            <span class="text-gray-300 dark:text-dark-border">/</span>
+            <span class="text-primary-600 dark:text-primary-400">{type}</span>
+          </>
+        )}
+        {rating && (
+          <>
+            <span class="text-gray-300 dark:text-dark-border">/</span>
+            <span>{'★'.repeat(rating)}{'☆'.repeat(5 - rating)}</span>
+          </>
+        )}
+      </div>
+
+      {link && (
+        <a
+          href={link}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-1 text-sm text-primary-600 dark:text-primary-400 hover:underline mb-4"
+        >
+          外部链接
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        </a>
+      )}
+
+      {tags && tags.length > 0 && (
+        <div class="flex flex-wrap gap-2 mb-8">
+          {tags.map((tag) => (
+            <a href={`/tags/${tag}`} class="text-xs px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors">
+              {tag}
+            </a>
+          ))}
+        </div>
+      )}
+
+      <!-- 分隔线 -->
+      <hr class="border-gray-200 dark:border-dark-border mb-8" />
+
+      <!-- 文章内容（data-pagefind-body 标记供搜索索引） -->
+      <article
+        data-pagefind-body
+        data-pagefind-meta={`title:${title}`}
+        data-pagefind-meta={`description:${description || ''}`}
+        data-pagefind-tags={tags?.join(', ') || ''}
+        class="prose prose-gray dark:prose-invert max-w-none
+        prose-headings:text-gray-900 dark:prose-headings:text-gray-100
+        prose-a:text-primary-600 dark:prose-a:text-primary-400
+        prose-code:text-primary-700 dark:prose-code:text-primary-300
+        prose-pre:bg-gray-100 dark:prose-pre:bg-dark-surface
+        prose-blockquote:border-l-primary-600 dark:prose-blockquote:border-l-primary-400
+        prose-a:underline prose-a:decoration-primary-600/30 hover:prose-a:decoration-primary-600 prose-a:underline-offset-2
+      ">
+        <slot />
+      </article>
+
+      <!-- 评论区域 -->
+      <div class="mt-12 pt-8 border-t border-gray-200 dark:border-dark-border">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">评论</h2>
+        {giscusConfig.repoId ? (
+          <Comment
+            repo={giscusConfig.repo}
+            repoId={giscusConfig.repoId}
+            category={giscusConfig.category}
+            categoryId={giscusConfig.categoryId}
+            client:load
+          />
+        ) : (
+          <p class="text-sm text-gray-400 dark:text-gray-500">评论系统配置中，请稍后再来。</p>
+        )}
+      </div>
+    </div>
+  </div>
+</BaseLayout>

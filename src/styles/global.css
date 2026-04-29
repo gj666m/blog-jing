@@ -22,10 +22,51 @@
   /* Layout */
   --width-content: 800px;
   --width-page: 1200px;
+
+  /* Animations */
+  --animate-float: hover-float 0.3s ease-out;
+  --animate-fade-in: fade-in 0.4s ease-out;
+  --animate-slide-down: slide-down 0.3s ease-out;
+}
+
+/* Keyframes */
+@keyframes hover-float {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-4px); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-down {
+  from { opacity: 0; max-height: 0; }
+  to   { opacity: 1; max-height: 300px; }
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
   font-size: 16px;
   line-height: 1.75;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+::selection {
+  background-color: var(--color-primary-100);
+  color: var(--color-primary-600);
+}
+
+.dark ::selection {
+  background-color: var(--color-primary-600);
+  color: white;
+}
+
+/* Prose 标题锚点偏移固定 header */
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  scroll-margin-top: 5rem;
 }
