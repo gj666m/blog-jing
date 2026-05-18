@@ -16,4 +16,4 @@ rsync -avz --delete dist/ ubuntu@${SERVER_IP}:/tmp/blog-jing-deploy/
 echo "📋 移动到网站目录..."
 ssh ubuntu@${SERVER_IP} "sudo rm -rf ${REMOTE_PATH}/* && sudo cp -r /tmp/blog-jing-deploy/* ${REMOTE_PATH}/ && sudo rm -rf /tmp/blog-jing-deploy"
 
-echo "✅ 部署完成！访问 http://blog.gjinggg.art"
+echo "✅ 部署完成！访问 https://blog.gjinggg.art"
